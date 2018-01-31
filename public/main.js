@@ -19,49 +19,62 @@ form.addEventListener('submit', (e) => {
 	e.preventDefault();
 });
 
-let dataPoints = [
-	{ label: 'Bitcoin', y: 0 },
-	{ label: 'Ethereum', y: 0 },
-	{ label: 'Litecoin', y: 0 },
-	{ label: 'Monero', y: 0 }
-];
+fetch('http://localhost:3000/poll')
+	.then(res => res.json())
+	.then(data => {
+		const votes = data.votes;
+		var totalVotes = votes.length;
 
-const chartContainer = document.querySelector('#chartContainer');
+		// Count vote points - accumulator/current value
+		const voteCounts = votes.reduce(
+			(acc, vote) => 
+				((acc[vote.coin] = (acc[vote.coin] || 0) + parseInt(vote.points)),acc), {});
 
-if(chartContainer) {
-	const chart = new CanvasJS.Chart('chartContainer', {
-		animationEnabled: true,
-		theme: 'theme1',
-		title: {
-			text: 'Coin Results'
-		},
-		data: [
-			{
-				type: 'column',
-				dataPoints: dataPoints
-			}
-		]
-	});
-	chart.render();
+		let dataPoints = [
+			{ label: 'Bitcoin', y: voteCounts.Bitcoin },
+			{ label: 'Ethereum', y: voteCounts.Ethereum },
+			{ label: 'Litecoin', y: voteCounts.Litecoin },
+			{ label: 'Monero', y: voteCounts.Monero }
+		];
 
-	// Enable pusher logging - don't include this in production
-    Pusher.logToConsole = true;
+		const chartContainer = document.querySelector('#chartContainer');
 
-    var pusher = new Pusher('bebe81c70727ec9b0795', {
-      cluster: 'us2',
-      encrypted: true
-    });
+		if(chartContainer) {
+			const chart = new CanvasJS.Chart('chartContainer', {
+				animationEnabled: true,
+				theme: 'theme1',
+				title: {
+					text: "Results"
+				},
+				data: [
+					{
+						type: 'column',
+						dataPoints: dataPoints
+					}
+				]
+			});
+			chart.render();
 
-    var channel = pusher.subscribe('coin-poll');
-    channel.bind('coin-vote', function(data) {
-      dataPoints = dataPoints.map(x => {
-      	if(x.label == data.coin) {
-      		x.y += data.points;
-      		return x;
-      	} else {
-      		return x;
-      	}
-      });
-      chart.render();
-    });
-}
+			// Enable pusher logging - don't include this in production
+		    Pusher.logToConsole = true;
+
+		    var pusher = new Pusher('bebe81c70727ec9b0795', {
+		      cluster: 'us2',
+		      encrypted: true
+		    });
+
+		    var channel = pusher.subscribe('coin-poll');
+		    channel.bind('coin-vote', function(data) {
+		      dataPoints = dataPoints.map(x => {
+		      	if(x.label == data.coin) {
+		      		x.y += data.points;
+		      		return x;
+		      	} else {
+		      		return x;
+		      	}
+		    });
+		    chart.render();
+		});
+	}
+});
+
