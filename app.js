@@ -3,6 +3,9 @@ const cors = require('cors');
 const express = require('express');
 const path = require('path');
 
+// DB config
+require('./config/db');
+
 const app = express();
 
 const poll = require('./routes/poll.js');
